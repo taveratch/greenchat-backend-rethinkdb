@@ -10,7 +10,6 @@ var Account = require('./account');
 var secret = require('./config').secret;
 
 var bodyParse = require('body-parser');
-var crypto = require('crypto');
 var morgan = require('morgan');
 var jwt = require('jsonwebtoken');
 var io = require('socket.io')(server);
@@ -56,9 +55,9 @@ app.post('/user/create', function(req, res) {
 
   var createAccount = function() {
     return new Account({
-      username: req.body.username,
-      email: req.body.email,
-      password: crypto.createHmac('sha256', secret).update(req.body.password).digest('hex')
+      username: username,
+      email: email,
+      password: Account.encrypt(password, secret)
     });
   };
   var saveAccount = function(account) {
@@ -66,6 +65,7 @@ app.post('/user/create', function(req, res) {
       res.json(result);
     });
   };
+
   var checkCallback = function(response) {
     if(response.success) { //username and email are available
       var account = createAccount();
@@ -79,5 +79,20 @@ app.post('/user/create', function(req, res) {
   Account.isExist(username,email, checkCallback); //check for existing account
 });
 
+app.post('/user/signin', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  var encryptedPassword = Account.encrypt(password, secret);
+  var callback = function(response) {
+    if(response.success) {
+      var user = response.data;
+      user.password = null;
+      res.json({success: true, token: jwt.sign(user, secret, {expiresIn: '24h'})});
+    }else {
+      res.json(response);
+    }
+  };
+  Account.find(username,encryptedPassword, callback);
+});
 server.listen(9090);
 console.log('Server is running on port : 9090');

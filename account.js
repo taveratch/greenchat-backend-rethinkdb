@@ -1,6 +1,7 @@
 var connection = require('./connection');
 var thinky = connection.thinky;
 var type = connection.type;
+var crypto = require('crypto');
 var Account = thinky.createModel('Account', {
   username: type.string(),
   email: type.string(),
@@ -30,5 +31,21 @@ function isExist(username, email, callback) {
   });
 }
 
+function encrypt(password, secret) {
+  return crypto.createHmac('sha256', secret).update(password).digest('hex');
+}
+
+function find(username, password, callback) {
+  Account.filter({username: username, password: password}).run().then(function(users) {
+    if(users.length === 1) {
+      callback({success: true, data: users[0]});
+    }else{
+      callback({success: false, message: 'Wrong username or password'});
+    }
+  });
+}
+
+Account.find = find;
+Account.encrypt = encrypt;
 Account.isExist = isExist;
 module.exports = Account;
