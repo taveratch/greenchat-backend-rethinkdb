@@ -18,6 +18,13 @@ var colors = require('colors');
 
 app.use(bodyParse.json());
 app.use(morgan('dev'));
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Credentials", true);
+  next();
+});
 app.set('secret', secret);
 
 function startListenDatabase(channel, socket) {
@@ -42,10 +49,18 @@ app.get('/', function(req, res) {
 });
 
 app.get('/channels', function(req, res) {
-  Channel.filter({}).run().then(function(data) {
-    console.log(colors.white('Request channel list'));
-    res.send(_.map(data, 'name'));
-  });
+  var token = req.headers.authorization;
+  var callback = function(response) {
+    if(response.success) {
+      Channel.filter({}).run().then(function(data) {
+        console.log(colors.white('Request channel list'));
+        res.json(_.map(data, 'name'));
+      });
+    }else{
+      res.json(response);
+    }
+  };
+  Account.verifyToken(token,secret, callback);
 });
 
 app.post('/user/create', function(req, res) {
@@ -97,5 +112,7 @@ app.post('/user/signin', function(req, res) {
   };
   Account.find(username,encryptedPassword, callback);
 });
+
+
 server.listen(9090);
 console.log('Server is running on port : 9090');

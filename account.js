@@ -2,6 +2,7 @@ var connection = require('./connection');
 var thinky = connection.thinky;
 var type = connection.type;
 var crypto = require('crypto');
+var jwt = require('jsonwebtoken');
 var Account = thinky.createModel('Account', {
   username: type.string(),
   email: type.string(),
@@ -45,10 +46,25 @@ function find(username, password, callback) {
   });
 }
 
+function verifyToken(token, secret, callback) {
+  if(token) {
+    jwt.verify(token, secret, function(err, decoded) {
+      if(err) {
+        callback({success: false, message: 'Failed to authenticate'});
+      }else {
+        callback({success: true, decoded: decoded});
+      }
+    });
+  }else{
+    callback({success: false, message: 'No token found.'});
+  }
+}
+
 function isValid(password) {
   return password.length >= 6;
 }
 
+Account.verifyToken = verifyToken;
 Account.isValid = isValid;
 Account.find = find;
 Account.encrypt = encrypt;
