@@ -45,6 +45,11 @@ function find(username, password, callback) {
   });
 }
 
+function isValid(password) {
+  return password.length >= 6;
+}
+
+Account.isValid = isValid;
 Account.find = find;
 Account.encrypt = encrypt;
 Account.isExist = isExist;

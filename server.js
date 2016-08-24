@@ -52,7 +52,10 @@ app.post('/user/create', function(req, res) {
   var username = req.body.username;
   var email = req.body.email;
   var password = req.body.password;
-
+  if(!Account.isValid(password)) { //Check password validation
+    res.json({success: false, message: 'Password must more than 6 letters'});
+    return;
+  }
   var createAccount = function() {
     return new Account({
       username: username,
